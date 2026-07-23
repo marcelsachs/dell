@@ -101,7 +101,7 @@ order += "tztime local"
 
 ethernet _first_ {format_up = " E: %ip (%speed) " format_down = " E: down "}
 wireless _first_ {format_up = " W: %essid %ip (%quality) " format_down = " W: down "}
-cpu_temperature 0 {format = " CPU %degrees °C " path = "/sys/class/hwmon/hwmon3/temp1_input" }
+cpu_temperature 0 {format = " CPU %degrees °C " path = "/sys/class/hwmon/hwmon3/temp2_input" }
 cpu_usage {format = " CPU: %usage "}
 load {format = " load: %1min "}
 memory {format = " mem: %used "}
