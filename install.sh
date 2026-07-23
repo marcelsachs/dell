@@ -25,7 +25,7 @@ if [[ "${1:-}" == "chroot" ]]; then
   : "${USER_PASSWORD:?}" "${ROOT_PASSWORD:?}"
   ln -sf "/usr/share/zoneinfo/${TIMEZONE}" /etc/localtime
   hwclock --systohc
-  printf 'en_US.UTF-8 UTF-8\nde_DE.UTF-8 UTF-8\n' > /etc/locale.gen
+  printf 'en_US.UTF-8 UTF-8' > /etc/locale.gen
   locale-gen
   echo "LANG=en_US.UTF-8" > /etc/locale.conf
   echo "${HOSTNAME}" > /etc/hostname
@@ -45,6 +45,78 @@ EOF
   printf '%s:%s\n' root "${ROOT_PASSWORD}" | chpasswd
   echo "%wheel ALL=(ALL:ALL) NOPASSWD: ALL" > /etc/sudoers.d/wheel
   chmod 0440 /etc/sudoers.d/wheel
+
+  cat > /home/${USERNAME}/.bashrc <<'EOF'
+[[ $- != *i* ]] && return
+
+export EDITOR=vim
+PS1='\u\[\033[1;38;5;81m\]@\h\[\033[0m\]: \w \[\033[1;38;5;226m\]$ \[\033[0m\]'
+
+HISTSIZE=50000
+HISTFILESIZE=100000
+HISTCONTROL=ignoreboth:erasedups
+shopt -s histappend
+PROMPT_COMMAND="history -a; history -n${PROMPT_COMMAND:+; $PROMPT_COMMAND}"
+EOF
+
+  cat > /home/${USERNAME}/.vimrc <<'EOF'
+colorscheme lunaperche
+set background=dark
+set expandtab
+set hlsearch
+set ignorecase
+set incsearch
+set shiftwidth=4
+set tabstop=4
+syntax on
+EOF
+
+  cat > /home/${USERNAME}/.gitconfig <<'EOF'
+[user]
+    name = Marcel Sachs
+    email = sachsmarcel@proton.me
+[core]
+    editor = vim
+[init]
+    defaultBranch = master
+EOF
+
+  cat > /home/${USERNAME}/.xinitrc <<'EOF'
+xset s off -dpms
+exec i3
+EOF
+
+  mkdir -p /home/${USERNAME}/.config/i3status
+  cat > /home/${USERNAME}/.config/i3status/config <<'EOF'
+general {colors = true interval = 1}
+order += "ethernet _first_"
+order += "wireless _first_"
+order += "cpu_temperature 0"
+order += "cpu_usage"
+order += "load"
+order += "memory"
+order += "battery 0"
+order += "volume master"
+order += "tztime local"
+
+ethernet _first_ {format_up = " E: %ip (%speed) " format_down = " E: down "}
+wireless _first_ {format_up = " W: %essid %ip (%quality) " format_down = " W: down "}
+cpu_temperature 0 {format = " CPU %degrees °C " path = "/sys/class/hwmon/hwmon3/temp1_input" }
+cpu_usage {format = " CPU: %usage "}
+load {format = " load: %1min "}
+memory {format = " mem: %used "}
+battery 0 {
+  format = " %status %percentage %remaining "
+  format_down = " No battery "
+  path = "/sys/class/power_supply/BAT0/uevent"
+  low_threshold = 10
+}
+volume master {format = " ♪ %volume " format_muted = " muted (%volume) " device = "default"}
+tztime local {format = " %d.%m.%Y | %H:%M:%S "}
+EOF
+
+  chown -R ${USERNAME}:${USERNAME} /home/${USERNAME}
+
   mkinitcpio -p linux
   grub-install --target=i386-pc "${DISK}"
   grub-mkconfig -o /boot/grub/grub.cfg
