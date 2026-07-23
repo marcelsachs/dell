@@ -89,7 +89,7 @@ EOF
   mkdir -p /home/${USERNAME}/.config/i3
   cat > /home/${USERNAME}/.config/i3/config <<'EOF'
 # i3 config (v4)
-font pango:IBM Plex Mono 10
+font pango:IBM Plex Mono 8
 
 # volume (PipeWire via pactl)
 set $refresh_i3status killall -SIGUSR1 i3status
@@ -228,6 +228,33 @@ tztime local {format = " %d.%m.%Y | %H:%M:%S "}
 EOF
 
   chown -R ${USERNAME}:${USERNAME} /home/${USERNAME}
+
+
+  runuser -u "${USERNAME}" -- bash -c '
+    set -euo pipefail
+    ST_DIR="$HOME/st"
+    FONT="IBM Plex Mono:pixelsize=12:antialias=true:autohint=true"
+    PATCH_BASE="https://st.suckless.org/patches/scrollback"
+    PATCHES=(
+      st-scrollback-0.9.2.diff
+      st-scrollback-mouse-0.9.2.diff
+      st-scrollback-mouse-altscreen-20200416-5703aa0.diff
+    )
+
+    rm -rf "$ST_DIR"
+    git clone https://git.suckless.org/st "$ST_DIR"
+    cd "$ST_DIR"
+    mkdir -p patches
+    for p in "${PATCHES[@]}"; do
+      curl -fLo "patches/$p" "$PATCH_BASE/$p"
+      patch -p1 < "patches/$p"
+    done
+    cp config.def.h config.h
+    sed -i "s/font = \".*\"/font = \"$FONT\"/" config.h
+    make clean
+    make
+    sudo make install
+  '
 
   mkinitcpio -p linux
   grub-install --target=i386-pc "${DISK}"
