@@ -229,7 +229,6 @@ EOF
 
   chown -R ${USERNAME}:${USERNAME} /home/${USERNAME}
 
-
   runuser -u "${USERNAME}" -- bash -c '
     set -euo pipefail
     ST_DIR="$HOME/st"
